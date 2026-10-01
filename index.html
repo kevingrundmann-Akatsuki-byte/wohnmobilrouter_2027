@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f3a5f">
+<title>Route 2027</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1d2733;--muted:#667384;--line:#dde3ea;--accent:#1f3a5f;--red:#c0392b;--ok:#1e8449;--warn:#b9770e;--route:#1f6fd1}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12171d;--card:#1b222b;--text:#e6ebf1;--muted:#93a1b2;--line:#2b3541;--accent:#8fb4e8;--red:#ee6c5c;--ok:#58d68d;--warn:#f5b041;--route:#5dade2}}
+:root[data-theme="dark"]{--bg:#12171d;--card:#1b222b;--text:#e6ebf1;--muted:#93a1b2;--line:#2b3541;--accent:#8fb4e8;--red:#ee6c5c;--ok:#58d68d;--warn:#f5b041;--route:#5dade2}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{margin:4px 0 2px;font-size:24px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 10px;color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:620px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+label{display:block;font-size:13px;color:var(--muted)}
+input[type=number],input[type=password],input[type=text]{width:100%;margin-top:4px;padding:11px 10px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.chk{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:15px;color:var(--text)}
+.chk input{width:22px;height:22px}
+.keyrow{display:flex;gap:8px;align-items:flex-end;margin-top:12px}
+.keyrow label{flex:1}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button{min-height:46px;padding:10px 16px;border:0;border-radius:10px;background:var(--accent);color:var(--bg);font-weight:600;font-size:15px;cursor:pointer}
+button.sec{background:transparent;color:var(--accent);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:default}
+.btns button{flex:1 1 200px}
+.seg-toggle{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px}
+.seg-toggle button{flex:1;border-radius:0;background:transparent;color:var(--text);min-height:42px;font-weight:500}
+.seg-toggle button.on{background:var(--accent);color:var(--bg)}
+#status{margin-top:10px;font-size:14px;min-height:20px}
+#status.err{color:var(--red)} #status.ok{color:var(--ok)}
+#map{height:62vh;max-height:560px;min-height:320px;border-radius:10px;z-index:0}
+.pin{width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font:700 11px/26px sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pin.s{background:#1f3a5f}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.kpi{background:var(--bg);border-radius:10px;padding:10px}
+.kpi b{display:block;font-size:20px;color:var(--accent)}
+.kpi span{font-size:12px;color:var(--muted)}
+.et{border-top:1px solid var(--line);padding:10px 0}
+.et:first-of-type{border-top:0}
+.et .t{font-weight:600}
+.et .m{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle;border:1px solid currentColor}
+.badge.truck{color:var(--ok)} .badge.car{color:var(--warn)}
+.et a{display:inline-block;margin-top:6px;margin-right:12px;color:var(--accent);font-size:14px;text-decoration:none;font-weight:600}
+.row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.nr{flex:0 0 30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.nr.s{background:var(--accent);color:var(--bg)}
+.info{flex:1;min-width:0}
+.name{font-weight:600}
+.meta{font-size:13px;color:var(--muted)}
+.hint{font-size:13px;color:var(--red)}
+.row a{color:var(--accent);text-decoration:none;font-size:14px;white-space:nowrap;padding:8px 4px}
+.row input{width:24px;height:24px;flex:0 0 24px}
+.done .name{text-decoration:line-through;opacity:.55}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+textarea{width:100%;height:110px;font:12px/1.4 ui-monospace,Menlo,monospace;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px}
+.hidden{display:none}
+@media print{body{background:#fff;color:#000}.card{break-inside:avoid}#setup,.btns,textarea,button{display:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>Route 2027</h1>
+<p class="sub">Bockhorn – Frankreich – Nordspanien – linksherum – zurück · Liner 9 m / 5,5 t</p>
+
+<!-- ============ Fahrzeug & API ============ -->
+<div class="card" id="setup">
+  <h2>Fahrzeug &amp; Berechnung</h2>
+  <div class="grid">
+    <label>Länge (m)<input type="number" id="vLen" step="0.1" min="2" value="9"></label>
+    <label>Gewicht (t)<input type="number" id="vWt" step="0.1" min="1" value="5.5"></label>
+    <label>Höhe (m)<input type="number" id="vHt" step="0.05" min="1" value="3.2"></label>
+    <label>Breite (m)<input type="number" id="vWd" step="0.05" min="1" value="2.35"></label>
+    <label>Max. km/h<input type="number" id="vSpd" step="5" min="40" max="140" value="90"></label>
+  </div>
+  <label class="chk"><input type="checkbox" id="vToll"> Maut möglichst meiden</label>
+
+  <div class="keyrow">
+    <label>API-Key simplerouting.io
+      <input type="password" id="apiKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Bearer-Token einfügen">
+    </label>
+    <button class="sec" id="keyShow" type="button" style="flex:0 0 auto">👁</button>
+  </div>
+  <p class="note">Der Key wird nur auf diesem Gerät gespeichert. Höhe und Breite bitte an euer Fahrzeug anpassen.</p>
+
+  <div class="seg-toggle" role="tablist">
+    <button id="modePlan" class="on" type="button">Reihenfolge wie geplant</button>
+    <button id="modeOpt" type="button" disabled>Optimierte Reihenfolge</button>
+  </div>
+
+  <div class="btns">
+    <button id="btnOpt" class="sec" type="button">1 · Reihenfolge optimieren (VROOM)</button>
+    <button id="btnRoute" type="button">2 · Wohnmobil-Route berechnen</button>
+  </div>
+  <div id="status" aria-live="polite"></div>
+</div>
+
+<!-- ============ Karte ============ -->
+<div class="card">
+  <h2>Karte</h2>
+  <div id="map"></div>
+  <p class="note" id="mapNote">Noch keine Straßenroute berechnet – angezeigt wird die Luftlinie.</p>
+</div>
+
+<!-- ============ Ergebnis ============ -->
+<div class="card hidden" id="resCard">
+  <h2>Ergebnis</h2>
+  <div class="kpis">
+    <div class="kpi"><b id="kKm">–</b><span>Kilometer</span></div>
+    <div class="kpi"><b id="kH">–</b><span>reine Fahrzeit</span></div>
+    <div class="kpi"><b id="kEt">–</b><span>Etappen</span></div>
+  </div>
+  <div id="etList"></div>
+  <div class="btns">
+    <button class="sec" id="btnGpx" type="button">GPX für Wohnmobil-Navi laden</button>
+  </div>
+  <p class="note">Grün = mit LKW-Profil (Maße/Gewicht berücksichtigt). Orange = kein LKW-Weg gefunden, Pkw-Ersatzroute – diese Etappe bitte besonders prüfen.</p>
+</div>
+
+<!-- ============ Stopps ============ -->
+<div class="card"><h2>Stopps (zum Abhaken antippen)</h2><div id="list"></div></div>
+
+<div class="card"><h2>Koordinaten (CSV)</h2><textarea id="csv" readonly></textarea><br><button id="cp" type="button" style="margin-top:8px">Kopieren</button></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =========================================================
+   Hauptziel: Für ein 9 m / 5,5 t Wohnmobil eine reale,
+   fahrzeuggerechte Straßenroute über alle Stopps berechnen.
+   1) VROOM  -> optionale Optimierung der Reihenfolge
+   2) Valhalla (costing "truck") -> Route mit Länge/Gewicht/Höhe/Breite
+   ========================================================= */
+
+// ⬇️ Optional: Key hier fest eintragen. Sonst einfach im Eingabefeld der Seite.
+const API_KEY = "101e8067-0550-4d10-beb6-efd1d8c560e4";
+const BASE = "https://api.simplerouting.io";
+
+// Name, Breite, Länge, Hinweis
+const S = [
+["Start: Bockhorn",53.3982,8.0125,""],
+["Sprendlingen",49.8601,7.9862,""],
+["Langres",47.8631,5.3332,""],
+["Gannat",46.1012,3.1975,"Danach mautfrei über A75/A20"],
+["Montauban",44.0175,1.3550,""],
+["Bardenas Reales",42.1953,-1.6361,"Piste im Park für 9 m kritisch"],
+["Riaño",42.9750,-5.0118,"Bergstraßen, mehr Zeit einplanen"],
+["Playa de Gulpiyuri",43.4478,-4.8861,"Nur zu Fuß, in Naves parken"],
+["Cudillero",43.5602,-6.1472,"Oben am Ortseingang parken"],
+["Las Médulas",42.4611,-6.7686,""],
+["Combarro",42.4293,-8.7058,"Enge Gassen: außerhalb parken"],
+["Sevilla",37.3621,-5.9942,""],
+["Setenil de las Bodegas",36.8572,-5.1718,"Am Ortsrand parken"],
+["Tarifa",36.0691,-5.6743,""],
+["Málaga",36.7161,-4.3052,""],
+["Frigiliana",36.7465,-3.8732,"Steil und eng: unten parken"],
+["Tabernas Wüste",37.0478,-2.4321,""],
+["Águilas",37.4208,-1.5620,""],
+["Bullas",38.0435,-1.6702,""],
+["Naturpark Cazorla",38.0123,-2.9341,"Bergstraßen, mehr Zeit einplanen"],
+["Lagunas de Ruidera",38.9381,-2.8390,""],
+["Albarracín",40.4095,-1.4362,"Am Ortsrand parken"],
+["Rupit",42.0251,2.4658,"Am Ortsrand parken, danach Rückweg"]
+];
+const PLANNED = S.map((_,i)=>i).slice(1);   // 1..22
+const PLANNED_CUTS = [5,11,17];             // Etappenenden wie bisher
+
+// ---------- Speicher (robust, falls localStorage gesperrt) ----------
+const ls = {
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const $ = id => document.getElementById(id);
+
+let state = {
+  mode: "plan",
+  optOrder: ls.get("r27_optOrder", null),
+  result: ls.get("r27_result", null),   // {mode, order, etappen:[{idx, shapes, legs, km, h, profile}]}
+  checked: ls.get("route2027", {})
+};
+
+// ---------- Fahrzeug / Key ----------
+const vehFields = ["vLen","vWt","vHt","vWd","vSpd"];
+const savedVeh = ls.get("r27_veh", null);
+if (savedVeh){ vehFields.forEach(f=>{ if(savedVeh[f]!=null) $(f).value=savedVeh[f]; }); $("vToll").checked=!!savedVeh.vToll; }
+const saveVeh = ()=>{ const o={}; vehFields.forEach(f=>o[f]=$(f).value); o.vToll=$("vToll").checked; ls.set("r27_veh",o); };
+vehFields.concat("vToll").forEach(f=>$(f).addEventListener("change",saveVeh));
+
+$("apiKey").value = API_KEY || ls.get("r27_key","");
+$("apiKey").addEventListener("change",()=>ls.set("r27_key",$("apiKey").value.trim()));
+$("keyShow").onclick = ()=>{ const i=$("apiKey"); i.type = i.type==="password"?"text":"password"; };
+const getKey = ()=> (API_KEY || $("apiKey").value || "").trim().replace(/^Bearer\s+/i,"");
+
+const num = (id,def)=>{ const v=parseFloat(String($(id).value).replace(",",".")); return isFinite(v)?v:def; };
+function vehicle(){
+  return { length:num("vLen",9), weight:num("vWt",5.5), height:num("vHt",3.2), width:num("vWd",2.35),
+           top_speed:Math.round(num("vSpd",90)), use_tolls:$("vToll").checked?0:0.5, hazmat:false };
+}
+
+// ---------- Status ----------
+function status(msg, cls){ const s=$("status"); s.textContent=msg||""; s.className=cls||""; }
+function busy(on){ $("btnOpt").disabled=on; $("btnRoute").disabled=on; }
+
+// ---------- API-Aufruf ----------
+async function api(path, body){
+  const key = getKey();
+  if (!key) throw new Error("Bitte zuerst den API-Key eintragen.");
+  let r;
+  try{
+    r = await fetch(BASE+path,{method:"POST",
+      headers:{ "Authorization":"Bearer "+key, "Content-Type":"application/json" },
+      body:JSON.stringify(body)});
+  }catch(e){
+    throw new Error("Keine Verbindung zur API (offline, oder der Browser blockiert die Anfrage).");
+  }
+  const txt = await r.text(); let j=null; try{ j=JSON.parse(txt) }catch(_){}
+  if (!r.ok){
+    const err = new Error(
+      r.status===401||r.status===403 ? "API-Key ungültig oder ohne Berechtigung." :
+      r.status===429 ? "Anfragelimit erreicht (Free: 100/Tag, 5/s). Später erneut versuchen." :
+      "Fehler "+r.status+": "+((j&&(j.error||j.error_message||j.message))||txt.slice(0,160)));
+    err.status = r.status; throw err;
+  }
+  return j;
+}
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+
+// ---------- 1) VROOM: Reihenfolge optimieren ----------
+// Achtung: VROOM nutzt die Pkw-Fahrzeiten; es geht hier nur um die Reihenfolge.
+async function optimize(){
+  busy(true); status("Optimiere Reihenfolge mit VROOM …");
+  try{
+    const home = [S[0][2], S[0][1]];                 // [lng, lat]!
+    const payload = {
+      vehicles:[{ id:1, start:home, end:home }],
+      jobs: PLANNED.map(i=>({ id:i, location:[S[i][2], S[i][1]] }))
+    };
+    const data = await api("/vroom/", payload);
+    if (!data.routes || !data.routes.length) throw new Error("VROOM lieferte keine Route.");
+    const order = data.routes[0].steps.filter(s=>s.type==="job").map(s=>s.id);
+    if (data.unassigned && data.unassigned.length)
+      status(data.unassigned.length+" Stopp(s) nicht erreichbar: "+data.unassigned.map(u=>S[u.id][0]).join(", "),"err");
+    state.optOrder = order; ls.set("r27_optOrder",order);
+    $("modeOpt").disabled=false; setMode("opt");
+    const km = data.summary && data.summary.distance ? " · ca. "+fmtKm(data.summary.distance/1000)+" km (Pkw)" : "";
+    status("Reihenfolge optimiert"+km+". Jetzt Schritt 2 für die Wohnmobil-Route.","ok");
+  }catch(e){ status(e.message,"err"); }
+  busy(false);
+}
+
+// ---------- Etappen bilden ----------
+function currentOrder(){ return state.mode==="opt" && state.optOrder ? state.optOrder : PLANNED; }
+function buildEtappen(order, mode){
+  const full=[0,...order,0];
+  let cuts;
+  if (mode==="plan") cuts = PLANNED_CUTS.map(c=>full.indexOf(c));
+  else { const n=full.length-1; cuts=[1,2,3].map(k=>Math.round(n*k/4)); }
+  const pos=[0,...cuts,full.length-1], et=[];
+  for (let k=0;k<pos.length-1;k++) et.push(full.slice(pos[k], pos[k+1]+1));
+  return et;
+}
+
+// ---------- 2) Valhalla Truck-Route ----------
+async function routeEtappe(idx){
+  const base = { locations: idx.map(i=>({lat:S[i][1], lon:S[i][2], type:"break"})),
+                 units:"kilometers", directions_type:"none" };
+  try{
+    const d = await api("/valhalla/route", {...base, costing:"truck", costing_options:{ truck: vehicle() }});
+    return { trip:d.trip, profile:"truck" };
+  }catch(e){
+    if (e.status===400 || e.status===404){         // kein LKW-tauglicher Weg -> Pkw-Ersatz
+      const d = await api("/valhalla/route", {...base, costing:"auto",
+                 costing_options:{ auto:{ top_speed:vehicle().top_speed, use_tolls:vehicle().use_tolls } }});
+      return { trip:d.trip, profile:"auto" };
+    }
+    throw e;
+  }
+}
+
+async function calcRoute(){
+  busy(true);
+  const mode=state.mode, order=currentOrder(), ets=buildEtappen(order,mode), out=[];
+  try{
+    for (let k=0;k<ets.length;k++){
+      status(`Berechne Etappe ${k+1} von ${ets.length} …`);
+      const r = await routeEtappe(ets[k]);
+      out.push({ idx:ets[k], profile:r.profile,
+        shapes:r.trip.legs.map(l=>l.shape),
+        legs:r.trip.legs.map(l=>({km:l.summary.length, h:l.summary.time/3600})),
+        km:r.trip.summary.length, h:r.trip.summary.time/3600 });
+      await sleep(250);
+    }
+    state.result={ mode, order, veh:vehicle(), etappen:out, at:new Date().toISOString() };
+    ls.set("r27_result", state.result);
+    const fb=out.filter(e=>e.profile!=="truck").length;
+    status(fb ? `Fertig – ${fb} Etappe(n) nur mit Pkw-Ersatzroute, bitte prüfen.` : "Fertig – alle Etappen mit Wohnmobil-Maßen berechnet.", fb?"err":"ok");
+    renderAll(true);
+  }catch(e){ status(e.message,"err"); }
+  busy(false);
+}
+
+// ---------- Polyline6 dekodieren (Valhalla) ----------
+function decode(str, prec=6){
+  let i=0,lat=0,lng=0; const out=[], f=Math.pow(10,prec);
+  while(i<str.length){
+    let b,sh=0,res=0; do{ b=str.charCodeAt(i++)-63; res|=(b&31)<<sh; sh+=5 }while(b>=32);
+    lat += (res&1)?~(res>>1):(res>>1);
+    sh=0; res=0; do{ b=str.charCodeAt(i++)-63; res|=(b&31)<<sh; sh+=5 }while(b>=32);
+    lng += (res&1)?~(res>>1):(res>>1);
+    out.push([lat/f, lng/f]);
+  }
+  return out;
+}
+
+// ---------- Format ----------
+const fmtKm = v=>Math.round(v).toLocaleString("de-DE");
+const fmtH = h=>{ const m=Math.round(h*60); return Math.floor(m/60)+" h "+String(m%60).padStart(2,"0")+" min"; };
+const short = n=>n.replace("Start: ","");
+
+// ---------- Karte ----------
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+const map = L.map("map",{zoomControl:true, tap:true}).setView([44,0],5);
+L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark?"dark_all":"rastertiles/voyager"}/{z}/{x}/{y}{r}.png`,{
+  maxZoom:19, subdomains:"abcd",
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
+}).addTo(map);
+let layer = L.layerGroup().addTo(map);
+const COLORS=["#1f6fd1","#8e44ad","#d35400","#16a085"];
+
+function renderMap(fit){
+  layer.clearLayers();
+  const order=currentOrder(), seq=[0,...order];
+  const res = state.result && state.result.mode===state.mode ? state.result : null;
+  if (res){
+    res.etappen.forEach((e,k)=>{
+      e.shapes.forEach(sh=>{
+        L.polyline(decode(sh),{color:COLORS[k%4],weight:5,opacity:.85,
+          dashArray:e.profile==="truck"?null:"8 6"}).addTo(layer);
+      });
+    });
+    $("mapNote").textContent="Straßenroute berechnet. Gestrichelt = Pkw-Ersatz (kein LKW-Weg gefunden).";
+  } else {
+    L.polyline([...seq,0].map(i=>[S[i][1],S[i][2]]),{color:"#888",weight:2,dashArray:"5 5"}).addTo(layer);
+    $("mapNote").textContent="Noch keine Straßenroute berechnet – angezeigt wird die Luftlinie.";
+  }
+  seq.forEach((i,n)=>{
+    const ic=L.divIcon({className:"",html:`<div class="pin${n?"":" s"}">${n?n:"S"}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+    L.marker([S[i][1],S[i][2]],{icon:ic}).bindPopup(`<b>${n?n+". ":""}${short(S[i][0])}</b>${S[i][3]?"<br>"+S[i][3]:""}<br><a href="${gmPoint(i)}" target="_blank" rel="noopener">In Google Maps öffnen</a>`).addTo(layer);
+  });
+  if (fit) map.fitBounds(L.latLngBounds(S.map(s=>[s[1],s[2]])),{padding:[20,20]});
+}
+
+// ---------- Google-Maps-Links ----------
+const gmPoint = i=>`https://www.google.com/maps/search/?api=1&query=${S[i][1]},${S[i][2]}`;
+function gmDir(idx){
+  const o=S[idx[0]], d=S[idx[idx.length-1]], w=idx.slice(1,-1).map(i=>S[i][1]+","+S[i][2]).join("|");
+  return `https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=${o[1]},${o[2]}&destination=${d[1]},${d[2]}${w?"&waypoints="+encodeURIComponent(w):""}`;
+}
+
+// ---------- Ergebnis ----------
+function renderResult(){
+  const res = state.result && state.result.mode===state.mode ? state.result : null;
+  $("resCard").classList.toggle("hidden",!res);
+  if (!res) return;
+  const km=res.etappen.reduce((a,e)=>a+e.km,0), h=res.etappen.reduce((a,e)=>a+e.h,0);
+  $("kKm").textContent=fmtKm(km); $("kH").textContent=fmtH(h); $("kEt").textContent=res.etappen.length;
+  $("etList").innerHTML = res.etappen.map((e,k)=>`
+    <div class="et">
+      <div class="t">Etappe ${k+1}: ${short(S[e.idx[0]][0])} → ${short(S[e.idx[e.idx.length-1]][0])}
+        <span class="badge ${e.profile==="truck"?"truck":"car"}">${e.profile==="truck"?"LKW-Profil":"Pkw-Ersatz"}</span></div>
+      <div class="m">${e.idx.length} Punkte · ${fmtKm(e.km)} km · ${fmtH(e.h)}</div>
+      <a href="${gmDir(e.idx)}" target="_blank" rel="noopener">Google Maps ↗</a>
+    </div>`).join("");
+}
+
+// ---------- Stoppliste ----------
+function legInfo(){
+  // km/h je Ziel-Stopp aus dem Ergebnis
+  const m={}; const res=state.result && state.result.mode===state.mode ? state.result : null;
+  if (!res) return m;
+  res.etappen.forEach(e=>e.legs.forEach((l,j)=>{ const to=e.idx[j+1]; m[to===0?"Z":to]=l; }));
+  return m;
+}
+function renderList(){
+  const list=$("list"), info=legInfo(), seq=[0,...currentOrder()];
+  list.innerHTML="";
+  seq.forEach((i,n)=>{
+    const s=S[i], l=info[i];
+    const d=document.createElement("div"); d.className="row"+(state.checked[i]?" done":"");
+    d.innerHTML=`<div class="nr${n?"":" s"}">${n?n:"S"}</div>
+      <div class="info"><div class="name">${s[0]}</div>
+      <div class="meta">${l?fmtKm(l.km)+" km · "+fmtH(l.h)+" ab Vorstopp · ":""}${s[1].toFixed(4)}, ${s[2].toFixed(4)}</div>
+      ${s[3]?`<div class="hint">${s[3]}</div>`:""}</div>
+      <a href="${gmPoint(i)}" target="_blank" rel="noopener">Karte</a>
+      <input type="checkbox" aria-label="erledigt" ${state.checked[i]?"checked":""}>`;
+    d.querySelector("input").onchange=e=>{ state.checked[i]=e.target.checked; d.classList.toggle("done",e.target.checked); ls.set("route2027",state.checked); };
+    list.appendChild(d);
+  });
+  const z=document.createElement("div"); z.className="row"; const l=info["Z"];
+  z.innerHTML=`<div class="nr s">Z</div><div class="info"><div class="name">Rückweg nach Bockhorn</div><div class="meta">${l?fmtKm(l.km)+" km · "+fmtH(l.h):"Strecke nach Berechnung"}</div></div>`;
+  list.appendChild(z);
+}
+
+// ---------- GPX-Export ----------
+function gpx(){
+  const res=state.result; if(!res) return;
+  const esc=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  let g=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Route 2027" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+  [0,...res.order].forEach((i,n)=>g+=`<wpt lat="${S[i][1]}" lon="${S[i][2]}"><name>${n?n+". ":""}${esc(short(S[i][0]))}</name>${S[i][3]?`<desc>${esc(S[i][3])}</desc>`:""}</wpt>\n`);
+  res.etappen.forEach((e,k)=>{
+    g+=`<trk><name>Etappe ${k+1}: ${esc(short(S[e.idx[0]][0]))} - ${esc(short(S[e.idx[e.idx.length-1]][0]))}</name><trkseg>\n`;
+    e.shapes.forEach(sh=>decode(sh).forEach(p=>g+=`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}"/>`));
+    g+=`\n</trkseg></trk>\n`;
+  });
+  g+="</gpx>";
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([g],{type:"application/gpx+xml"}));
+  a.download="Route_2027.gpx"; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+}
+
+// ---------- CSV ----------
+function renderCsv(){
+  const seq=[0,...currentOrder()];
+  const csv="Nr,Name,Breitengrad,Längengrad\n"+seq.map((i,n)=>`${n||"S"},"${S[i][0]}",${S[i][1]},${S[i][2]}`).join("\n");
+  $("csv").value=csv;
+  $("cp").onclick=async()=>{ try{ await navigator.clipboard.writeText(csv) }catch(e){ $("csv").select(); try{document.execCommand("copy")}catch(_){} } };
+}
+
+// ---------- Modus ----------
+function setMode(m){
+  state.mode=m;
+  $("modePlan").classList.toggle("on",m==="plan");
+  $("modeOpt").classList.toggle("on",m==="opt");
+  renderAll(true);
+}
+function renderAll(fit){ renderMap(fit); renderResult(); renderList(); renderCsv(); }
+
+$("modePlan").onclick=()=>setMode("plan");
+$("modeOpt").onclick=()=>{ if(state.optOrder) setMode("opt"); };
+$("btnOpt").onclick=optimize;
+$("btnRoute").onclick=calcRoute;
+$("btnGpx").onclick=gpx;
+
+// ---------- Start ----------
+if (state.optOrder) $("modeOpt").disabled=false;
+if (state.result && state.result.mode==="opt" && state.optOrder){ state.mode="opt"; $("modePlan").classList.remove("on"); $("modeOpt").classList.add("on"); }
+renderAll(true);
+setTimeout(()=>map.invalidateSize(),200);
+addEventListener("orientationchange",()=>setTimeout(()=>map.invalidateSize(),300));
+</script>
+</body>
+</html>
